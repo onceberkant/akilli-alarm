@@ -21,7 +21,7 @@ lib/
   screens/home_screen.dart      Alarm listesi
   screens/edit_alarm_screen.dart Alarm ekle/düzenle
   screens/ring_screen.dart      Alarm çalma ekranı
-assets/sounds/                  3 adet zil sesi (WAV)
+assets/sounds/                  4 adet zil sesi (WAV), varsayılan: Güçlü Uyandırma
 android/app/src/main/AndroidManifest.xml  İzinler
 tool/hazirla.sh                 Eksik Android dosyalarını üretir
 .github/workflows/apk-derle.yml Bulutta APK derleme

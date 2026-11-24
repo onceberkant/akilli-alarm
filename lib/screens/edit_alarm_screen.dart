@@ -240,6 +240,16 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
             ),
           ),
 
+          // Maksimum ses
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            secondary: const Icon(Icons.volume_up),
+            title: const Text('Maksimum ses'),
+            subtitle: const Text('Telefonun sesi kısık olsa bile tam sesle çalar'),
+            value: _draft.maxVolume,
+            onChanged: (v) => setState(() => _draft.maxVolume = v),
+          ),
+
           // Titreşim
           SwitchListTile(
             contentPadding: EdgeInsets.zero,

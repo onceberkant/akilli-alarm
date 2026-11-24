@@ -1,10 +1,11 @@
 // Tek bir alarmın tüm bilgilerini tutan model ve yardımcı fonksiyonlar.
 
 /// Varsayılan zil sesi (assets klasöründeki dosya yolu)
-const String kDefaultSound = 'assets/sounds/klasik.wav';
+const String kDefaultSound = 'assets/sounds/guclu.wav';
 
 /// Uygulamayla gelen zil sesleri: dosya yolu -> ekranda görünen ad
 const Map<String, String> kSounds = {
+  'assets/sounds/guclu.wav': 'Güçlü Uyandırma',
   'assets/sounds/klasik.wav': 'Klasik Bip',
   'assets/sounds/yumusak.wav': 'Yumuşak Melodi',
   'assets/sounds/dijital.wav': 'Dijital',
@@ -49,6 +50,7 @@ class AlarmItem {
     this.enabled = true,
     this.sound = kDefaultSound,
     this.vibrate = true,
+    this.maxVolume = true,
     this.snoozeMinutes = 5,
     this.nextAt,
   }) : days = days ?? <int>{};
@@ -61,6 +63,7 @@ class AlarmItem {
   bool enabled; // Açık / kapalı
   String sound; // Zil sesi dosya yolu
   bool vibrate; // Titreşim
+  bool maxVolume; // Telefonun sesi kısık olsa bile tam sesle çal
   int snoozeMinutes; // Erteleme süresi (dakika)
   DateTime? nextAt; // Alarm paketine kurulan bir sonraki çalma zamanı
 
@@ -101,6 +104,7 @@ class AlarmItem {
         enabled: enabled,
         sound: sound,
         vibrate: vibrate,
+        maxVolume: maxVolume,
         snoozeMinutes: snoozeMinutes,
         nextAt: nextAt,
       );
@@ -115,6 +119,7 @@ class AlarmItem {
         'enabled': enabled,
         'sound': sound,
         'vibrate': vibrate,
+        'maxVolume': maxVolume,
         'snoozeMinutes': snoozeMinutes,
         'nextAt': nextAt?.millisecondsSinceEpoch,
       };
@@ -134,6 +139,7 @@ class AlarmItem {
       enabled: json['enabled'] as bool? ?? true,
       sound: kSounds.containsKey(rawSound) ? rawSound : kDefaultSound,
       vibrate: json['vibrate'] as bool? ?? true,
+      maxVolume: json['maxVolume'] as bool? ?? true,
       snoozeMinutes: json['snoozeMinutes'] as int? ?? 5,
       nextAt: rawNext == null ? null : DateTime.fromMillisecondsSinceEpoch(rawNext),
     );

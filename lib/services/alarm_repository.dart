@@ -120,8 +120,11 @@ class AlarmRepository extends ChangeNotifier {
       androidStopAlarmOnTermination: false,
       // Bildirimdeki "Ertele" düğmesinin süresi
       androidSnoozeDuration: Duration(minutes: item.snoozeMinutes),
-      // Telefonun alarm ses seviyesi kullanılır (artan ses sonraki sürümde)
-      volumeSettings: const VolumeSettings.fixed(),
+      // Maksimum ses açıksa: alarm sesi %100'e çekilir ve çalarken kısılamaz.
+      // Kapalıysa telefonun kendi alarm ses seviyesi kullanılır.
+      volumeSettings: item.maxVolume
+          ? const VolumeSettings.fixed(volume: 1.0, volumeEnforced: true)
+          : const VolumeSettings.fixed(),
       notificationSettings: NotificationSettings(
         title: title,
         body: 'Saat ${item.timeText} alarmı çalıyor. Kapatmak için dokunun.',
