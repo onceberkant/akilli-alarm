@@ -1,0 +1,49 @@
+# GitHub'a her yükleme yapıldığında APK'yı bulutta derler.
+# Bilgisayar gerekmez: APK, depodaki "Releases" bölümünden telefona indirilir.
+name: APK Derle
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # Actions sekmesinden elle de çalıştırılabilir
+
+permissions:
+  contents: write # Release oluşturabilmek için
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodu indir
+        uses: actions/checkout@v4
+
+      - name: Java 17 kur
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Flutter kur
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Android dosyalarını hazırla
+        run: bash tool/hazirla.sh
+
+      - name: APK derle
+        run: flutter build apk --release
+
+      - name: APK'yı Actions çıktısı olarak sakla
+        uses: actions/upload-artifact@v4
+        with:
+          name: akilli-alarm-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Release oluştur (telefondan kolay indirme)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Alarm v1.0.${{ github.run_number }}
+          files: build/app/outputs/flutter-apk/app-release.apk
