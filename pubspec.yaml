@@ -1,0 +1,31 @@
+name: akilli_alarm
+description: Modern, hafif ve güvenilir Android alarm uygulaması (MVP).
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Türkçe saat seçici ve arayüz metinleri için
+  flutter_localizations:
+    sdk: flutter
+  # Asıl alarm motoru: Android'de exact alarm + ön plan servisi + tam ekran bildirim
+  alarm: ^5.15.0
+  # Bildirim, exact alarm ve pil optimizasyonu izinlerini istemek için
+  permission_handler: ^12.0.0
+  # Alarm listesini kalıcı olarak saklamak için (uygulama kapansa da silinmez)
+  shared_preferences: ^2.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  # Uygulamayla birlikte gelen zil sesleri
+  assets:
+    - assets/sounds/

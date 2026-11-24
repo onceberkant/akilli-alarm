@@ -1,0 +1,59 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Telefon yeniden başlayınca alarmları tekrar kurmak için -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Alarm anında işlemciyi/ekranı uyandırmak için -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Titreşim -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Kilit ekranında tam ekran alarm sayfası -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- Alarm sesi çalarken çalışan ön plan servisi -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Rahatsız Etmeyin modunu algılamak için -->
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+    <!-- Android 13+ bildirim izni -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Tam zamanında (exact) alarm: Android 13+ alarm uygulamalarına otomatik verilir -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- Android 12 için tam zamanlı alarm izni (kullanıcı onayı gerekir) -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- Pil optimizasyonundan muafiyet istemek için -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <application
+        android:label="Alarm"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <meta-data
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <!-- Flutter tarafından kullanılır, silmeyin -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+
+    <!-- Flutter'ın metin işleme özelliği için gerekli sorgu -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT" />
+            <data android:mimeType="text/plain" />
+        </intent>
+    </queries>
+</manifest>
