@@ -83,6 +83,11 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
       context: context,
       initialTime: TimeOfDay(hour: _draft.hour, minute: _draft.minute),
       helpText: 'Alarm saati',
+      // Doğrudan rakam klavyesiyle açılır; istenirse sol alttaki saat simgesiyle kadrana geçilir
+      initialEntryMode: TimePickerEntryMode.input,
+      hourLabelText: 'Saat',
+      minuteLabelText: 'Dakika',
+      errorInvalidText: 'Geçerli bir saat girin',
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
         child: child!,
