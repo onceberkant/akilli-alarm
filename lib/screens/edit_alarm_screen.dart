@@ -1,5 +1,8 @@
 // Alarm ekleme / düzenleme ekranı: saat, tekrar günleri, etiket, zil sesi, titreşim, erteleme.
 
+import 'dart:async';
+
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 
 import '../models/alarm_item.dart';
@@ -21,6 +24,11 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
   late final TextEditingController _labelController;
   bool _saving = false;
 
+  // Zil sesi önizlemesi için ses oynatıcı
+  final AudioPlayer _preview = AudioPlayer();
+  StreamSubscription<void>? _previewDoneSub;
+  bool _previewing = false; // Şu an önizleme çalıyor mu?
+
   bool get _isNew => widget.existing == null;
 
   @override
@@ -34,12 +42,39 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
       _draft = AlarmItem(id: _repo.newId(), hour: t.hour, minute: t.minute);
     }
     _labelController = TextEditingController(text: _draft.label);
+    // Önizleme kendiliğinden bitince düğmeyi tekrar "oynat" durumuna getir
+    _previewDoneSub = _preview.onPlayerComplete.listen((_) {
+      if (mounted) setState(() => _previewing = false);
+    });
   }
 
   @override
   void dispose() {
+    _previewDoneSub?.cancel();
+    unawaited(_preview.dispose()); // Ekrandan çıkınca ses de durur
     _labelController.dispose();
     super.dispose();
+  }
+
+  /// Seçilen zil sesini bir kez çalar.
+  /// audioplayers yolun başına "assets/" eklediği için onu çıkarıyoruz.
+  Future<void> _playPreview(String sound) async {
+    try {
+      await _preview.stop();
+      await _preview.play(AssetSource(sound.replaceFirst('assets/', '')));
+      if (mounted) setState(() => _previewing = true);
+    } catch (e) {
+      debugPrint('Önizleme çalınamadı: $e');
+      if (mounted) setState(() => _previewing = false);
+    }
+  }
+
+  /// Çalan önizlemeyi durdurur
+  Future<void> _stopPreview() async {
+    try {
+      await _preview.stop();
+    } catch (_) {}
+    if (mounted) setState(() => _previewing = false);
   }
 
   /// 24 saat biçiminde saat seçiciyi açar
@@ -73,6 +108,7 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
 
   Future<void> _save() async {
     if (_saving) return;
+    await _stopPreview();
     setState(() => _saving = true);
     _draft.label = _labelController.text.trim();
     _draft.enabled = true; // Kaydedilen alarm her zaman açık olur
@@ -81,6 +117,8 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
   }
 
   Future<void> _delete() async {
+    await _stopPreview();
+    if (!mounted) return;
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -208,16 +246,33 @@ class _EditAlarmScreenState extends State<EditAlarmScreen> {
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.music_note_outlined),
             title: const Text('Zil sesi'),
-            trailing: DropdownButton<String>(
-              value: _draft.sound,
-              underline: const SizedBox.shrink(),
-              items: [
-                for (final e in kSounds.entries)
-                  DropdownMenuItem(value: e.key, child: Text(e.value)),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButton<String>(
+                  value: _draft.sound,
+                  underline: const SizedBox.shrink(),
+                  items: [
+                    for (final e in kSounds.entries)
+                      DropdownMenuItem(value: e.key, child: Text(e.value)),
+                  ],
+                  // Yeni ses seçilince hemen çalarak dinlet
+                  onChanged: (v) {
+                    if (v == null) return;
+                    setState(() => _draft.sound = v);
+                    _playPreview(v);
+                  },
+                ),
+                // Dinle / Durdur düğmesi
+                IconButton(
+                  tooltip: _previewing ? 'Durdur' : 'Dinle',
+                  iconSize: 32,
+                  color: Theme.of(context).colorScheme.primary,
+                  icon: Icon(_previewing ? Icons.stop_circle : Icons.play_circle),
+                  onPressed: () =>
+                      _previewing ? _stopPreview() : _playPreview(_draft.sound),
+                ),
               ],
-              onChanged: (v) {
-                if (v != null) setState(() => _draft.sound = v);
-              },
             ),
           ),
 
