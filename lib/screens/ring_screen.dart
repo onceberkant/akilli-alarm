@@ -1,4 +1,7 @@
-// Alarm çalarken açılan tam ekran sayfa: büyük saat, etiket, "Ertele" ve "Kapat" düğmeleri.
+// Alarm çalarken açılan tam ekran sayfa.
+// - Normal alarm: büyük saat, etiket, "Ertele" (sınır varsa kalan hak) ve "Kapat".
+//   Görev açıksa "Kapat"tan sonra matematik / sallama görevi çıkar.
+// - "Uyandın mı?" kontrolü: tek büyük "Uyanığım" düğmesi.
 
 import 'dart:async';
 
@@ -7,6 +10,7 @@ import 'package:flutter/material.dart';
 
 import '../models/alarm_item.dart';
 import '../services/alarm_repository.dart';
+import '../widgets/wake_task.dart';
 
 class RingScreen extends StatefulWidget {
   const RingScreen({super.key, required this.alarm});
@@ -24,6 +28,10 @@ class _RingScreenState extends State<RingScreen> {
   bool _seenRinging = false; // Bu alarmın çaldığını akıştan gördük mü?
   bool _busy = false; // Bir düğmeye basıldı, işlem sürüyor
   bool _closed = false;
+  bool _showTask = false; // Uyanma görevi ekranda mı?
+
+  bool get _isCheck => widget.alarm.id >= kCheckOffset;
+  int get _itemId => _isCheck ? widget.alarm.id - kCheckOffset : widget.alarm.id;
 
   @override
   void initState() {
@@ -62,6 +70,15 @@ class _RingScreenState extends State<RingScreen> {
     _close();
   }
 
+  /// "Kapat": görev varsa önce görevi göster, yoksa hemen kapat
+  void _onDismissPressed(AlarmItem? item) {
+    if (item != null && item.task != kTaskNone) {
+      setState(() => _showTask = true);
+    } else {
+      _dismiss();
+    }
+  }
+
   Future<void> _dismiss() async {
     if (_busy) return;
     setState(() => _busy = true);
@@ -69,23 +86,19 @@ class _RingScreenState extends State<RingScreen> {
     _close();
   }
 
+  Future<void> _confirmAwake() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    await _repo.confirmAwake(_itemId);
+    _close();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final item = _repo.findById(widget.alarm.id);
-    final label = (item?.label.trim().isNotEmpty ?? false)
-        ? item!.label.trim()
-        : widget.alarm.notificationSettings.title;
-    final snoozeMinutes = item?.snoozeMinutes ?? 5;
+    final item = _repo.findById(_itemId);
     final now = DateTime.now();
-    const months = [
-      'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-      'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
-    ];
-    const weekdays = [
-      'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar',
-    ];
 
-    // Geri tuşuyla kapatılamaz; mutlaka Ertele veya Kapat seçilmeli
+    // Geri tuşuyla kapatılamaz; mutlaka bir seçim yapılmalı
     return PopScope(
       canPop: false,
       child: Scaffold(
@@ -101,72 +114,157 @@ class _RingScreenState extends State<RingScreen> {
           child: SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  const Spacer(),
-                  const Icon(Icons.alarm, size: 64, color: Colors.white70),
-                  const SizedBox(height: 16),
-                  Text(
-                    '${twoDigits(now.hour)}:${twoDigits(now.minute)}',
-                    style: const TextStyle(
-                      fontSize: 96,
-                      fontWeight: FontWeight.w200,
-                      color: Colors.white,
-                      fontFeatures: [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                  Text(
-                    '${now.day} ${months[now.month - 1]} ${weekdays[now.weekday - 1]}',
-                    style: const TextStyle(fontSize: 18, color: Colors.white70),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const Spacer(flex: 2),
-                  // Büyük "Ertele" düğmesi
-                  SizedBox(
-                    width: double.infinity,
-                    height: 84,
-                    child: FilledButton.tonalIcon(
-                      onPressed: _busy ? null : _snooze,
-                      icon: const Icon(Icons.snooze, size: 32),
-                      label: Text('Ertele ($snoozeMinutes dk)',
-                          style: const TextStyle(fontSize: 24)),
-                      style: FilledButton.styleFrom(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Büyük "Kapat" düğmesi
-                  SizedBox(
-                    width: double.infinity,
-                    height: 84,
-                    child: FilledButton.icon(
-                      onPressed: _busy ? null : _dismiss,
-                      icon: const Icon(Icons.alarm_off, size: 32),
-                      label: const Text('Kapat', style: TextStyle(fontSize: 24)),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFFE5484D),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ),
+              child: _isCheck
+                  ? _buildCheck(now)
+                  : (_showTask && item != null)
+                      ? _buildTask(item)
+                      : _buildRing(item, now),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _clockText(DateTime now, {double size = 96}) => Text(
+        '${twoDigits(now.hour)}:${twoDigits(now.minute)}',
+        style: TextStyle(
+          fontSize: size,
+          fontWeight: FontWeight.w200,
+          color: Colors.white,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
+      );
+
+  Widget _bigButton({
+    required String text,
+    required IconData icon,
+    required VoidCallback? onPressed,
+    required Color color,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 84,
+      child: FilledButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 32),
+        label: Text(text, style: const TextStyle(fontSize: 24)),
+        style: FilledButton.styleFrom(
+          backgroundColor: color,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        ),
+      ),
+    );
+  }
+
+  /// Normal alarm görünümü
+  Widget _buildRing(AlarmItem? item, DateTime now) {
+    final label = item?.displayLabel ?? widget.alarm.notificationSettings.title;
+    final canSnooze = item?.canSnooze ?? true;
+    final left = item?.snoozesLeft;
+    final snoozeText = 'Ertele (${item?.snoozeMinutes ?? 5} dk)'
+        '${left != null ? ' · $left hak' : ''}';
+    final hasTask = item != null && item.task != kTaskNone;
+
+    return Column(
+      children: [
+        const Spacer(),
+        const Icon(Icons.alarm, size: 64, color: Colors.white70),
+        const SizedBox(height: 16),
+        _clockText(now),
+        Text(
+          '${now.day} ${kMonthNames[now.month - 1]} ${kDayNames[now.weekday - 1]}',
+          style: const TextStyle(fontSize: 18, color: Colors.white70),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w500, color: Colors.white),
+        ),
+        const Spacer(flex: 2),
+        if (canSnooze)
+          _bigButton(
+            text: snoozeText,
+            icon: Icons.snooze,
+            onPressed: _busy ? null : _snooze,
+            color: Colors.white.withValues(alpha: 0.18),
+          )
+        else
+          const Padding(
+            padding: EdgeInsets.only(bottom: 8),
+            child: Text(
+              'Erteleme hakkın bitti — kalkma vakti!',
+              style: TextStyle(color: Colors.white70, fontSize: 18),
+            ),
+          ),
+        const SizedBox(height: 16),
+        _bigButton(
+          text: hasTask ? 'Kapat (görev)' : 'Kapat',
+          icon: Icons.alarm_off,
+          onPressed: _busy ? null : () => _onDismissPressed(item),
+          color: const Color(0xFFE5484D),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  /// Uyanma görevi görünümü (alarm bu sırada çalmaya devam eder)
+  Widget _buildTask(AlarmItem item) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            // Görevden vazgeçip alarm ekranına (Ertele için) dönmek mümkün
+            TextButton.icon(
+              onPressed: _busy ? null : () => setState(() => _showTask = false),
+              icon: const Icon(Icons.arrow_back, color: Colors.white70),
+              label: const Text('Geri', style: TextStyle(color: Colors.white70)),
+            ),
+            const Spacer(),
+            _clockText(DateTime.now(), size: 28),
+          ],
+        ),
+        Expanded(
+          child: Center(
+            child: SingleChildScrollView(
+              child: WakeTask(item: item, onDone: _dismiss),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// "Uyandın mı?" kontrol görünümü
+  Widget _buildCheck(DateTime now) {
+    return Column(
+      children: [
+        const Spacer(),
+        const Icon(Icons.verified_user_outlined, size: 72, color: Colors.white70),
+        const SizedBox(height: 16),
+        _clockText(now),
+        const SizedBox(height: 16),
+        const Text(
+          'Uyandın mı?',
+          style: TextStyle(fontSize: 34, fontWeight: FontWeight.w600, color: Colors.white),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Uyanık olduğunu onayla',
+          style: TextStyle(fontSize: 18, color: Colors.white70),
+        ),
+        const Spacer(flex: 2),
+        _bigButton(
+          text: 'Evet, uyanığım',
+          icon: Icons.check_circle_outline,
+          onPressed: _busy ? null : _confirmAwake,
+          color: const Color(0xFF30A46C),
+        ),
+        const SizedBox(height: 16),
+      ],
     );
   }
 }
