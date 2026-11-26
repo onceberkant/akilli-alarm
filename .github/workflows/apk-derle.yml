@@ -41,8 +41,25 @@ jobs:
       - name: Android dosyalarını hazırla
         run: bash tool/hazirla.sh
 
+      # Her derlemede aynı imzayı kullanmak için sabit anahtar.
+      # Anahtar yoksa APK her seferinde farklı imzalanır ve telefon güncellemeyi reddeder.
+      - name: Sabit imza anahtarını yükle
+        env:
+          IMZA_ANAHTARI: ${{ secrets.IMZA_ANAHTARI }}
+        run: |
+          if [ -n "$IMZA_ANAHTARI" ]; then
+            mkdir -p ~/.android
+            echo "$IMZA_ANAHTARI" | base64 -d > ~/.android/debug.keystore
+            echo "Sabit imza anahtarı kullanılıyor"
+          else
+            echo "::warning::IMZA_ANAHTARI tanımlı değil; APK geçici anahtarla imzalanacak"
+          fi
+
       - name: APK derle
         run: flutter build apk --release
+
+      - name: İmzayı kontrol et
+        run: keytool -printcert -jarfile build/app/outputs/flutter-apk/app-release.apk | grep -E "Owner|SHA256" | head -3
 
       - name: APK'yı Actions çıktısı olarak sakla
         uses: actions/upload-artifact@v4
