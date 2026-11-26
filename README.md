@@ -2,14 +2,18 @@
 
 Android için hafif ve güvenilir alarm uygulaması. Alarm motoru olarak [`alarm`](https://pub.dev/packages/alarm) paketi kullanılır: Android'in tam zamanlı (exact) alarm servisi, ön plan ses servisi ve kilit ekranında tam ekran bildirim.
 
-## MVP özellikleri
-- Birden fazla alarm: saat, etiket, zil sesi, titreşim, erteleme süresi (5/10/15 dk)
-- Tekrar: Tek seferlik, Hafta içi, Hafta sonu, Her gün veya özel günler
-- Tek dokunuşla aç/kapat, kaydırarak veya düzenleme ekranından silme
-- Çalma ekranı: büyük **Ertele** ve **Kapat** düğmeleri, geri tuşuyla kapanmaz
-- Kilit ekranında tam ekran açılır; uygulama kapalıyken de çalar
-- Alarmlar telefona kaydedilir; telefon yeniden başlayınca tekrar kurulur
-- Açık/koyu tema telefonun ayarını izler
+## Özellikler (v1.1)
+- Birden fazla alarm: saat, etiket, zil sesi, titreşim
+- Tekrar: tek seferlik, hafta içi, hafta sonu, her gün, özel günler veya belirli bir tarih
+- Resmî tatillerde çalmama, "bir sonrakini atla"
+- Zil sesi: uygulama sesleri, telefonun alarm/zil sesleri, telefondaki müzik dosyaları (dinleyerek seçim)
+- Maksimum ses, artan ses (30 sn / 1 dk / 2 dk)
+- Erteleme süresi ve erteleme sınırı
+- Uyanma görevi: matematik (kolay/orta/zor) veya telefonu sallama
+- "Uyandın mı?" kontrolü: kapattıktan birkaç dakika sonra onay ister, onaylamazsan tekrar çalar
+- Hızlı şekerleme (5–90 dk), kalan süre / uyku süresi bilgisi
+- Tema seçimi, alarmları yedekleme / geri yükleme, ana ekran widget'ı
+- Kilit ekranında tam ekran açılır; uygulama kapalıyken ve telefon yeniden başlayınca da çalışır
 
 ## Proje yapısı
 ```
@@ -64,5 +68,5 @@ flutter build apk --release   # APK: build/app/outputs/flutter-apk/app-release.a
 - [ ] Telefonu yeniden başlatın → alarm listesi ve kurulumlar duruyor olmalı
 - [ ] "Hafta içi" alarmı kapatın → ana ekranda "Sonraki alarm" bir sonraki iş gününü göstermeli
 
-## Sonraki adımlar
-Artan ses seviyesi, telefondan özel zil sesi seçme, zil sesi önizleme, ana ekran widget'ı, alarm kapatmak için görev (matematik sorusu) vb.
+## İmzalama
+APK her derlemede aynı anahtarla imzalanır (GitHub secret: `IMZA_ANAHTARI`). Anahtar kaybolursa güncellemeler eski sürümün üzerine kurulamaz; yedeği saklayın.
